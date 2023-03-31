@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<title>PROGMEM作蔵さん</title>
+<style>
+  html, body {  height: 90%;  background:#ffffff;  }
+  h1         {  border:dotted 2px;  border-radius:20px;  padding:20px;  }
+  h1, h3, p  {  color:#776666;  text-align:center;  margin:50px;  }
+  code       {  color:#444444;  font-size:75%;  }
+</style>
+<script>
+function DragOver( event ) {
+    event.preventDefault();                 // Prevent browser default processing (forbidden mark)
+}
+function Drop( event ) {
+    event.preventDefault();                // Block browser default processing (page navigation)
+    
+    var f = event.dataTransfer.files[0];    // Retrieve file stored in event
+    var code = "<pre><code>"
+    code += "// " + "file name : " + f.name + "\n";
+    code += "{";
+    var reader = new FileReader();
+    reader.onloadend = function(){
+        var uint8array = new Uint8Array(reader.result);
+        for( var i = 0; i < f.size; i++) {
+            var num = uint8array[i] >= 128 ? uint8array[i] - 128 : uint8array[i] + 128;
+            if( i != 0 )    code += ",";
+            if( !(i % 16) ) code += "\n  ";
+            code += ( num > 15 ? "0x" : "0x0" );
+            code += ( num.toString(16) );
+        }
+        code += "\n},\n\n</code></pre>";
+        document.getElementById("main").innerHTML = code;
+    };
+    reader.readAsArrayBuffer( f );
+}
+</script>
+<body ondragover="DragOver(event);" ondrop="Drop(event);" id="main" >
+<h1>PROGMEM作蔵さん</h1>
+<h3>Convert binary file to C language data format</h3>
+<p>drop file here</p>
+</body>
+</html>
