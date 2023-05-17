@@ -6406,19 +6406,19 @@ void loop() {
  old_disp_sw = disp_sw;
  disp_sw = digitalRead(10);
 
- if (old_disp_sw == 1 && disp_sw == 0) { //switch on to off , mode 9 setting update
+/*  if (old_disp_sw == 1 && disp_sw == 0) { //switch on to off , mode 9 setting update
    //    mode = 0;
    OLED_display();
- }
+ } */
 
- if (old_disp_sw == 0 && disp_sw == 1) { //switch off to on , mode 9 setting update
+/*  if (old_disp_sw == 0 && disp_sw == 1) { //switch off to on , mode 9 setting update
    //    mode = 0;
    ch1_is_on = 0;
    ch2_is_on = 0;
    ch3_is_on = 0;
-   ch4_is_on = 0;
-   OLED_display();
- }
+   ch4_is_on = 0; */
+  OLED_display();
+ //}
 
  if (disp_sw == 1 && ch1_is_on == 0 && ch2_is_on == 0 && ch3_is_on == 0 && ch4_is_on == 0 ) {
    //  touch sensor input
@@ -6660,22 +6660,23 @@ void loop() {
      OLED_display();
      disp_ratch = 0;
      delay(100);//countermeasure of touch sensor continuous input
+     // TODO remove delay once touch sensors changed to knobs
    }
  }
 
 
- else if (disp_sw == 0) {
+ //else if (disp_sw == 0) {
    //----------------signal input--------------------------
-   old_ch1_in = ch1_in;
-   old_ch2_in = ch2_in;
-   old_ch3_in = ch3_in;
-   old_ch4_in = ch4_in;
+  old_ch1_in = ch1_in;
+  old_ch2_in = ch2_in;
+  old_ch3_in = ch3_in;
+  old_ch4_in = ch4_in;
 
-   ch1_in = digitalRead(1);
-   ch2_in = digitalRead(2);
-   ch3_in = digitalRead(3);
-   ch4_in = digitalRead(6);
- }
+  ch1_in = digitalRead(1);
+  ch2_in = digitalRead(2);
+  ch3_in = digitalRead(3);
+  ch4_in = digitalRead(6);
+ //}
 
  soundout();
 }
