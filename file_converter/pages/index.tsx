@@ -5,9 +5,7 @@ const onFormSubmit = async (formData: any) => {
   console.log(formData)
   const response = await fetch('api/convert', {
     method: 'POST',
-    body: JSON.stringify({
-      formData,
-    }),
+    body: JSON.stringify(formData),
     headers: {
       'content-type': 'application/json',
     },
@@ -40,13 +38,13 @@ export default function Home() {
           <fieldset className={styles.fieldset}>
             <legend>Input file type:</legend>
             <div>
-              <input checked type='radio' name='inputType' id='inputTypeRawSigned' value='rawSigned' />
-              <label htmlFor='rawSigned'>Raw Signed</label>
+              <input defaultChecked type='radio' name='inputType' id='inputTypeRawUnsigned' value='rawUnsigned' />
+              <label htmlFor='rawUnsigned'>Raw Unsigned</label>
             </div>
             <div>
-              <input disabled type='radio' name='inputType' id='inputTypeRawUnsigned' value='rawUnsigned' />
-              <label className={styles.textGray} htmlFor='rawUnsigned'>
-                Raw Unsigned
+              <input disabled type='radio' name='inputType' id='inputTypeRawSigned' value='rawSigned' />
+              <label className={styles.textGray} htmlFor='rawSigned'>
+                Raw Signed
               </label>
             </div>
             <div>
@@ -64,30 +62,28 @@ export default function Home() {
           </fieldset>
           <fieldset className={styles.fieldset}>
             <legend>Input glob pattern</legend>
-            <input type='text' name='inputGlob' id='' />
+            <input type='text' name='inputGlob' id='' defaultValue={'./Samples/**/*.raw'} />
           </fieldset>
           <fieldset className={styles.fieldset}>
             <legend>Output type:</legend>
-            <div>
-              <input type='radio' name='outputType' id='separateFilesBundle' value='separateFilesBundle' />
-              <label htmlFor='separateFilesBundle'>Separate files + bundle file</label>
+            {/* <div>
+              <input type='radio' name='outputType' id='outputTypeSingleFile' value='singleFile' />
+              <label htmlFor='outputTypeSingleFile'>Single file</label>
             </div>
             <div>
-              <input type='radio' name='outputType' id='separateFiles' value='separateFiles' />
-              <label htmlFor='separateFiles'>Separate data files</label>
-            </div>
+              <input disabled type='radio' name='outputType' id='outputTypeSeparateFiles' value='separateFiles' />
+              <label className={styles.textGray} htmlFor='outputTypeSeparateFiles'>
+                Separate files
+              </label>
+            </div> */}
             <div>
-              <input type='radio' name='outputType' id='singleFile' value='singleFile' />
-              <label htmlFor='singleFile'>Single file</label>
-            </div>
-            <div>
-              <input type='checkbox' id='lengthTest' name='lengthTest' />
-              <label htmlFor='lengthTest'>Include length test</label>
+              <input defaultChecked type='checkbox' id='contiguousArray' name='contiguousArray' />
+              <label htmlFor='contiguousArray'>Use a contiguous (1D) array (recommended)</label>
             </div>
           </fieldset>
           <fieldset className={styles.fieldset}>
-            <legend>Output folder</legend>
-            <input type='text' name='outputPath' />
+            <legend>Output file name</legend>
+            <input type='text' name='outputPath' defaultValue={'20230315_sampler_code/audio_data'} />
           </fieldset>
           <input type='submit' value='Convert' />
         </form>

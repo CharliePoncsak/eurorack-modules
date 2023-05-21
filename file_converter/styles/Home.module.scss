@@ -19,13 +19,15 @@
 .settingsForm {
   margin: 0 20px;
   .fieldset {
-    padding: 12px;
+    padding: 6px 24px 12px 12px;
     margin: 20px 0;
 
     input {
       margin: 0.4rem;
     }
     input[type='text'] {
+      padding: 4px;
+      width: 100%;
     }
   }
   input[type='submit'] {
