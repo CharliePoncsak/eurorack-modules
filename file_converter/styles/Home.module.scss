@@ -1,0 +1,48 @@
+.main {
+  align-items: center;
+  padding: 6rem;
+  min-height: 100vh;
+}
+
+.description {
+  display: inherit;
+  justify-content: inherit;
+  align-items: inherit;
+  text-align: center;
+  margin: 20px;
+  padding: 20px;
+  font-size: 1.1rem;
+  border: dotted 2px;
+  border-radius: 20px;
+}
+
+.settingsForm {
+  margin: 0 20px;
+  .fieldset {
+    padding: 6px 24px 12px 12px;
+    margin: 20px 0;
+
+    input {
+      margin: 0.4rem;
+    }
+    input[type='text'] {
+      padding: 4px;
+      width: 100%;
+    }
+  }
+  input[type='submit'] {
+    padding: 4px 12px;
+    margin-right: 8px;
+  }
+}
+
+.code {
+  font-family: var(--font-mono);
+}
+
+.textGray {
+  color: gray;
+}
+.greenText {
+  color: lime;
+}
