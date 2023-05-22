@@ -32,7 +32,7 @@
   }
   input[type='submit'] {
     padding: 4px 12px;
-    margin: 0 auto;
+    margin-right: 8px;
   }
 }
 
@@ -42,4 +42,7 @@
 
 .textGray {
   color: gray;
+}
+.greenText {
+  color: lime;
 }

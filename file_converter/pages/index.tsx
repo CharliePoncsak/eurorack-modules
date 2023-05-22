@@ -1,5 +1,6 @@
 import Head from 'next/head'
 import styles from '@/styles/Home.module.scss'
+import { useState } from 'react'
 
 const onFormSubmit = async (formData: any) => {
   console.log(formData)
@@ -11,10 +12,13 @@ const onFormSubmit = async (formData: any) => {
     },
   })
 
-  console.log(await response.json())
+  const json = await response.json()
+  console.log('Converter returned: ', json)
+  return json
 }
 
 export default function Home() {
+  const [convertedCount, setConvertedCount] = useState(0)
   return (
     <>
       <Head>
@@ -31,7 +35,9 @@ export default function Home() {
           onSubmit={e => {
             e.preventDefault()
             const formData = Object.fromEntries(new FormData(e.target as HTMLFormElement).entries())
-            onFormSubmit(formData)
+            onFormSubmit(formData).then(json => {
+              if (json?.convertedCount && !isNaN(json?.convertedCount)) setConvertedCount(json?.convertedCount)
+            })
           }}
         >
           <h1>Input</h1>
@@ -42,10 +48,8 @@ export default function Home() {
               <label htmlFor='rawUnsigned'>Raw Unsigned</label>
             </div>
             <div>
-              <input disabled type='radio' name='inputType' id='inputTypeRawSigned' value='rawSigned' />
-              <label className={styles.textGray} htmlFor='rawSigned'>
-                Raw Signed
-              </label>
+              <input type='radio' name='inputType' id='inputTypeRawSigned' value='rawSigned' />
+              <label htmlFor='rawSigned'>Raw Signed</label>
             </div>
             <div>
               <input disabled type='radio' name='inputType' id='inputTypeWav' value='wav' />
@@ -86,6 +90,7 @@ export default function Home() {
             <input type='text' name='outputPath' defaultValue={'20230315_sampler_code/audio_data'} />
           </fieldset>
           <input type='submit' value='Convert' />
+          {convertedCount ? <span className={styles.greenText}>Converted {convertedCount} files</span> : ''}
         </form>
       </main>
     </>

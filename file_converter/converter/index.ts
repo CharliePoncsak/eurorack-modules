@@ -62,7 +62,8 @@ export const convert = async ({ inputType, inputGlob, outputPath, contiguousArra
   let currentOffset = 0
   let samples = '{\n'
   for (const [i, file] of inputFiles.entries()) {
-    const buffer = await fs.readFile(path.join('..', file))
+    const _buf = await fs.readFile(path.join('..', file))
+    const buffer = inputType === 'rawUnsigned' ? _buf : new Int8Array(_buf)
     if (i != 0) sizes += ',\n'
     if (i != 0) offsets += ',\n'
     if (i != 0) samples += ',\n'
@@ -74,12 +75,9 @@ export const convert = async ({ inputType, inputGlob, outputPath, contiguousArra
     samples += `  // ${i}: ${path.basename(file)}`
     if (!contiguousArray) samples += '\n  {'
     for (const [j, byte] of buffer.entries()) {
-      if (i == 16 && j < 32) console.log(byte)
-
       if (j != 0) samples += ','
       if (!(j % 16)) samples += '\n  '
       if (!(j % 16) && !contiguousArray) samples += '  '
-
       samples += byte > 15 ? '0x' : '0x0'
       samples += byte.toString(16)
     }
@@ -91,5 +89,7 @@ export const convert = async ({ inputType, inputGlob, outputPath, contiguousArra
 
   fs.writeFile(`${dirname}/${filename}.c`, cFileTemplate(filename, sizes, offsets, samples))
 
-  return { converted: true }
+  console.log(`Converted ${inputFiles.length} file${inputFiles.length > 1 ? 's' : ''}`)
+
+  return { convertedCount: inputFiles.length }
 }
