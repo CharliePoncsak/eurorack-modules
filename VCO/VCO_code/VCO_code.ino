@@ -1,4 +1,5 @@
 //#include <hardware/pwm.h>
+#define CONFIG_ADC_ONESHOT_FORCE_USE_ADC2_ON_C3
 
 int k = 1;
 float AM_mod = 1;//AM modulation rate
@@ -45,11 +46,13 @@ void IRAM_ATTR onTimer() {
 
 void setup()
 {
-  pinMode(0, INPUT_PULLUP);//oct select
-  pinMode(1, INPUT_PULLUP);//oct select
+  Serial.begin(9600); // for debugging
+
+  pinMode(21, INPUT_PULLUP);//oct select
+  pinMode(20, INPUT_PULLUP);//oct select
   pinMode(6, INPUT_PULLUP);//push sw
-  pinMode(3, INPUT_PULLUP);//mode select
-  pinMode(4, INPUT_PULLUP);//mode select
+  pinMode(10, INPUT_PULLUP);//mode select
+  pinMode(9, INPUT_PULLUP);//mode select
   timer = micros();
   
   table_set();//set wavetable
@@ -63,11 +66,12 @@ void setup()
 
 
   // PWM custom for ESP32 =========================================
-  // based on https://note.com/solder_state/n/n950ed088c3cb
+  // based on https://note.com/solder_state/n/n950ed088c3cb 
+  // he used D5 is that important? its to use ADC2 instead of ADC1 i think
 
-  pinMode(D8, OUTPUT);//sound_out PWM
+  pinMode(D0, OUTPUT);//sound_out PWM
   ledcSetup(1, 39000, 10);//PWM frequency and resolution
-  ledcAttachPin(D8, 1);//(LED_PIN, LEDC_CHANNEL_0);//timer ch1 , apply D5 output
+  ledcAttachPin(D0, 1);//(LED_PIN, LEDC_CHANNEL_0);//timer ch1 , apply D8 output
   
   timer0 = timerBegin(0, 1666, true);  // timer0, 12.5ns*1666 = 20.83usec(48kHz), count-up
   timerAttachInterrupt(timer0, &onTimer, true); // edge-triggered
@@ -108,49 +112,55 @@ void loop()
 {
   old_push_sw = push_sw;
 
+  // TODO redo octave select with 20 position selector ================================================== 
+  oct_sw = 1;
   //-------------------octave select-------------------------------
-  if (digitalRead(0) == 1 && digitalRead(1) == 1) {
-    oct_sw = 1;
+ /*  if (digitalRead(0) == 1 && digitalRead(1) == 1) {
+
   }
   else if (digitalRead(0) == 0 && digitalRead(1) == 1) {
     oct_sw = 3;
   }
   else if (digitalRead(0) == 1 && digitalRead(1) == 0) {
     oct_sw = 0;
-  }
+  } ================================================================================================== */
 
   //  -------------------mode select-------------------------------
-  if (digitalRead(4) == 1 && digitalRead(3) == 1) {
+  if (digitalRead(9) == 1 && digitalRead(10) == 1) {
     mode = 1;//fm
   }
-  else if (digitalRead(4) == 0 && digitalRead(3) == 1) {
+  else if (digitalRead(9) == 0 && digitalRead(10) == 1) {
     mode = 0;//AM
   }
-  else if (digitalRead(4) == 1 && digitalRead(3) == 0) {
+  else if (digitalRead(9) == 1 && digitalRead(10) == 0) {
     mode = 2;//wavefolder
   }
 
   //  -------------------frequeny calculation-------------------------------
-  adc = analogRead(26) * calb;//Correct resistance errors
+  adc = analogRead(8) * calb;//Correct resistance errors
   adc = constrain(adc , 0, 1225) ;//Covers 6(=1220) octaves. If it is 1230 or more, the operation becomes unstable.
-  freq_pot = map(analogRead(27), 0, 1023, 0, 127);
+  freq_pot = map(analogRead(3), 0, 1023, 0, 127);
   osc_freq = freq_table[adc + freq_pot]; // V/oct apply
   osc_freq = 256 * osc_freq / 122070 * (1 + oct_sw);
 
   //  -------------------mod parameter set-------------------------------
   if (mode == 0) {//fold
-    mod = constrain(analogRead(29) + analogRead(28), 0, 1023) * 0.0036 + 0.90; //28 is CV , 29 is pot
+    Serial.println("fold mode");
+    mod = constrain(analogRead(5) + analogRead(4), 0, 1023) * 0.0036 + 0.90; //28 is CV , 29 is pot
   }
   else if (mode == 1) {//FM
-    mod = constrain(analogRead(29) + analogRead(28), 0, 1023) / 8;
+    Serial.println("FM mode");
+    mod = constrain(analogRead(5) + analogRead(4), 0, 1023) / 8;
   }
   else if (mode == 2) {//AM
-    mod = 1023 - constrain(analogRead(29) + analogRead(28), 0, 1023) ;
+    Serial.println("AM mode");
+    mod = 1023 - constrain(analogRead(5) + analogRead(4), 0, 1023) ;
   }
 
   //  -------------------push sw-------------------------------
   push_sw = digitalRead(6);
   if (push_sw == 0 && old_push_sw == 1) {//when push sw ON
+    Serial.println("push switch ON");
     waveform++;//change waveform
     if (waveform > 7) {
       waveform = 0;
