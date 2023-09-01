@@ -1,11 +1,16 @@
+# Summary
+
+This repo contains code for my own DIY eurorack modules involving microcontrollers and utilities regarding them. For now, it is mainly for the drum sampler but will host code for various modules throughout the years.
+
 # drum-sampler
 
-Arduino drum sampler.
+Arduino 4 channel drum sampler.
 
 Code and Arduino circuit from Hagiwo :
 
-https://note.com/solder_state/n/n0209d16d0d08
-https://www.youtube.com/watch?v=7Vcwk8KYZM8
+[Blog post](https://note.com/solder_state/n/n0209d16d0d08)
+
+[Video](https://www.youtube.com/watch?v=7Vcwk8KYZM8)
 
 ## Hardware
 
@@ -19,7 +24,7 @@ https://www.microchip.com/en-us/product/ATsamd21g18
 
 [Datasheet](https://ww1.microchip.com/downloads/aemDocuments/documents/MCU32/ProductDocuments/DataSheets/SAM-D21-DA1-Family-Data-Sheet-DS40001882H.pdf)
 
-## Coverting .wav files to raw audio files
+## Converting .wav files to raw audio files
 
 Use either ffmpeg or Audiacity to convert a .wav file to use it with this program:
 
