@@ -34,6 +34,9 @@ bool disp_set = 1;//1=font size big but have noise , 0 = font size small due to 
 
 // Rotary encoder
 BasicEncoder encoder(2,3); // TODO Change pin no.
+const int buttonPin = 2 // TODO change pin no.
+
+int buttonState = 0 
 
 //sample setting
 int slct_smpl1 = 0;
@@ -6395,6 +6398,8 @@ else if ( EEPROM.isValid()==0){//no eeprom data , setting any number to eeprom
  pinMode(6, INPUT_PULLDOWN);
  pinMode(10, INPUT_PULLUP); //for development
 
+ pinMode(buttonPin, INPUT)
+
  // OLD  Initialize touch sensor
 //  if (! qt_1.begin())
 //    Serial.println("Failed to begin qt on pin A7");
@@ -6423,6 +6428,19 @@ void loop() {
   OLED_display();
  //}
 
+  // Encoder push button read
+  buttonState = digitalRead(buttonPin);
+
+  // check if the pushbutton is pressed. If it is, the buttonState is HIGH:
+  if (buttonState == HIGH) {
+    // turn LED on:
+    digitalWrite(ledPin, HIGH);
+  } else {
+    // turn LED off:
+    digitalWrite(ledPin, LOW);
+  }
+ 
+ 
  if (disp_sw == 1 && ch1_is_on == 0 && ch2_is_on == 0 && ch3_is_on == 0 && ch4_is_on == 0 ) {
    //  OLD touch sensor input
   //  qt1 = qt_1.measure();
