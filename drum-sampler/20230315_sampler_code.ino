@@ -10,7 +10,7 @@
 
 #include <Wire.h>//for I2C
 #include <avr/pgmspace.h>
-
+#include <BasicEncoder.h>
 
 // Declaring display variables
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
@@ -22,15 +22,18 @@ bool old_disp_sw = 0;
 bool disp_set = 1;//1=font size big but have noise , 0 = font size small due to reduce noise.
 
 //touch
-Adafruit_FreeTouch qt_1 = Adafruit_FreeTouch(A7, OVERSAMPLE_32, RESISTOR_0, FREQ_MODE_NONE);
-Adafruit_FreeTouch qt_2 = Adafruit_FreeTouch(A8, OVERSAMPLE_32, RESISTOR_0, FREQ_MODE_NONE);
-Adafruit_FreeTouch qt_3 = Adafruit_FreeTouch(A9, OVERSAMPLE_32, RESISTOR_0, FREQ_MODE_NONE);
-int qt1 = 0;//read touch sensor ,use as select button
-int qt2 = 0;//read touch sensor ,use as up button
-int qt3 = 0;//read touch sensor ,use as down button
-byte qt1_ratch = 0;//0=no signal,1=with signal,2=countermeasure of continuous signal
-byte qt2_ratch = 0;
-byte qt3_ratch = 0;
+// Adafruit_FreeTouch qt_1 = Adafruit_FreeTouch(A7, OVERSAMPLE_32, RESISTOR_0, FREQ_MODE_NONE);
+// Adafruit_FreeTouch qt_2 = Adafruit_FreeTouch(A8, OVERSAMPLE_32, RESISTOR_0, FREQ_MODE_NONE);
+// Adafruit_FreeTouch qt_3 = Adafruit_FreeTouch(A9, OVERSAMPLE_32, RESISTOR_0, FREQ_MODE_NONE);
+// int qt1 = 0;//read touch sensor ,use as select button
+// int qt2 = 0;//read touch sensor ,use as up button
+// int qt3 = 0;//read touch sensor ,use as down button
+// byte qt1_ratch = 0;//0=no signal,1=with signal,2=countermeasure of continuous signal
+// byte qt2_ratch = 0;
+// byte qt3_ratch = 0;
+
+// Rotary encoder
+BasicEncoder encoder(2,3); // TODO Change pin no.
 
 //sample setting
 int slct_smpl1 = 0;
@@ -6392,13 +6395,13 @@ else if ( EEPROM.isValid()==0){//no eeprom data , setting any number to eeprom
  pinMode(6, INPUT_PULLDOWN);
  pinMode(10, INPUT_PULLUP); //for development
 
- //   Initialize touch sensor
- if (! qt_1.begin())
-   Serial.println("Failed to begin qt on pin A7");
- if (! qt_2.begin())
-   Serial.println("Failed to begin qt on pin A8");
- if (! qt_3.begin())
-   Serial.println("Failed to begin qt on pin A9");
+ // OLD  Initialize touch sensor
+//  if (! qt_1.begin())
+//    Serial.println("Failed to begin qt on pin A7");
+//  if (! qt_2.begin())
+//    Serial.println("Failed to begin qt on pin A8");
+//  if (! qt_3.begin())
+//    Serial.println("Failed to begin qt on pin A9");
 }
 
 void loop() {
@@ -6421,44 +6424,61 @@ void loop() {
  //}
 
  if (disp_sw == 1 && ch1_is_on == 0 && ch2_is_on == 0 && ch3_is_on == 0 && ch4_is_on == 0 ) {
-   //  touch sensor input
-   qt1 = qt_1.measure();
-   qt2 = qt_2.measure();
-   qt3 = qt_3.measure();
+   //  OLD touch sensor input
+  //  qt1 = qt_1.measure();
+  //  qt2 = qt_2.measure();
+  //  qt3 = qt_3.measure();
 
+   // Rotary encoder read
+   int encoder_change = encoder.get_change();  
+
+   // OLD touch sensor code
    //qtx_ratch == 0 is countermeasure of
-   if (qt1 > 930 && qt1_ratch == 0) {
-     qt1_ratch = 1;
-     disp_ratch = 1;
-   }
-   if (qt2 > 930 && qt2_ratch == 0) {
-     qt2_ratch = 1;
-     disp_ratch = 1;
-   }
-   if (qt3 > 930 && qt3_ratch == 0) {
-     qt3_ratch = 1;
-     disp_ratch = 1;
-   }
-   if (qt1 <= 930) {
-     qt1_ratch = 0;
-   }
-   if (qt2 <= 930) {
-     qt2_ratch = 0;
-   }
-   if (qt3 <= 930) {
-     qt3_ratch = 0;
-   }
+  //  if (qt1 > 930 && qt1_ratch == 0) {
+  //    qt1_ratch = 1;
+  //    disp_ratch = 1;
+  //  }
+  //  if (qt2 > 930 && qt2_ratch == 0) {
+  //    qt2_ratch = 1;
+  //    disp_ratch = 1;
+  //  }
+  //  if (qt3 > 930 && qt3_ratch == 0) {
+  //    qt3_ratch = 1;
+  //    disp_ratch = 1;
+  //  }
+  //  if (qt1 <= 930) {
+  //    qt1_ratch = 0;
+  //  }
+  //  if (qt2 <= 930) {
+  //    qt2_ratch = 0;
+  //  }
+  //  if (qt3 <= 930) {
+  //    qt3_ratch = 0;
+  //  }
 
-   if (qt1_ratch == 1) {
+  //  if (qt1_ratch == 1) {
+  //    mode ++;
+  //    qt1_ratch = 2;
+  //    if (mode >= 11) {
+  //      mode = 0;
+  //    }
+  //    else if (mode < 0) {
+  //      mode = 10;
+  //    }
+  //  }
+
+   if (encoder_change == 1) {
      mode ++;
-     qt1_ratch = 2;
-     if (mode >= 11) {
-       mode = 0;
-     }
-     else if (mode < 0) {
-       mode = 10;
-     }
    }
+   else if (encoder_change == -1) {
+    mode --;
+   }
+    if (mode >= 11) {
+      mode = 0;
+    }
+    else if (mode < 0) {
+      mode = 10;
+    }
 
    //select sample
    if (mode == 0) {  //select CH1 sample
@@ -6659,7 +6679,7 @@ void loop() {
    if (  disp_ratch == 1) {
      OLED_display();
      disp_ratch = 0;
-     delay(100);//countermeasure of touch sensor continuous input
+     // delay(100);//countermeasure of touch sensor continuous input
      // TODO remove delay once touch sensors changed to knobs
    }
  }
