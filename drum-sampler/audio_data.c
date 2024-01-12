@@ -1,4 +1,5 @@
-#include <cstdint>
+#include <stdint.h>
+#include <stdlib.h>
 #include "audio_data.h"
 
 const size_t AUDIO_DATA_SIZES[] = {

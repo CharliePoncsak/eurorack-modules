@@ -65,12 +65,12 @@ struct TouchSensor {
   Adafruit_FreeTouch sensor;
   int touch_value;  
   byte touch_active;
-}
+};
 
 TouchSensor sensors[NUMBER_OF_TOUCH_SENSORS] = {
-  { .pin_name = 'A7', .sensor = Adafruit_FreeTouch(A7, OVERSAMPLE_32, RESISTOR_0, FREQ_MODE_NONE), .touch_value = 0, .touch_active = 0 },  // 0 = select button
-  { .pin_name = 'A8', .sensor = Adafruit_FreeTouch(A8, OVERSAMPLE_32, RESISTOR_0, FREQ_MODE_NONE), .touch_value = 0, .touch_active = 0 },  // 1 = up button
-  { .pin_name = 'A9', .sensor = Adafruit_FreeTouch(A9, OVERSAMPLE_32, RESISTOR_0, FREQ_MODE_NONE), .touch_value = 0, .touch_active = 0 }   // 2 = down button
+  { .pin_name = "A7", .sensor = Adafruit_FreeTouch(A7, OVERSAMPLE_32, RESISTOR_0, FREQ_MODE_NONE), .touch_value = 0, .touch_active = 0 },  // 0 = select button
+  { .pin_name = "A8", .sensor = Adafruit_FreeTouch(A8, OVERSAMPLE_32, RESISTOR_0, FREQ_MODE_NONE), .touch_value = 0, .touch_active = 0 },  // 1 = up button
+  { .pin_name = "A9", .sensor = Adafruit_FreeTouch(A9, OVERSAMPLE_32, RESISTOR_0, FREQ_MODE_NONE), .touch_value = 0, .touch_active = 0 }   // 2 = down button
 };
 
 struct Channel {
@@ -82,7 +82,7 @@ struct Channel {
   int control_voltage;            // Control voltage comming from the inputs of each channel
   int previous_control_voltage;   // Previous value of the control voltage. Used to detect a rising or falling edge.
   int input_pin;                  // Id of the pin for the control voltage input
-}
+};
 
 Channel channels[NUMBER_OF_CHANNELS] = {
   { .should_play = 0, .sample_id = 0, .current_index = 0, .current_output = 0, .volume = 0, .control_voltage = 8, .previous_control_voltage = 0, .input_pin = 1 },
@@ -164,86 +164,92 @@ void read_controls() {
       case 1:
       case 2:
       case 3:
-        // Select sample
-        Channel c = channels[mode];
-        if (sensors[1].touch_active == 1) { // Up
-          sensors[1].touch_active = 0;
-          c.should_play = 1; // One shot sample play
-          c.sample_id++;
-          if (c.sample_id > NUMBER_OF_SAMPLES - 1) {
-            c.sample_id = 0;
+        {
+          // Select sample
+          Channel c = channels[mode];
+          if (sensors[1].touch_active == 1) { // Up
+            sensors[1].touch_active = 0;
+            c.should_play = 1; // One shot sample play
+            c.sample_id++;
+            if (c.sample_id > NUMBER_OF_SAMPLES - 1) {
+              c.sample_id = 0;
+            }
+          } else if (sensors[2].touch_active == 1) { // Down
+            sensors[2].touch_active = 0;
+            c.should_play = 1; // One shot sample play
+            c.sample_id--;
+            if (c.sample_id < 0) {
+              c.sample_id = NUMBER_OF_SAMPLES - 1;
+            }
           }
-        } else if (sensors[2].touch_active == 1) { // Down
-          sensors[2].touch_active = 0;
-          c.should_play = 1; // One shot sample play
-          c.sample_id--;
-          if (c.sample_id < 0) {
-            c.sample_id = NUMBER_OF_SAMPLES - 1;
-          }
+          break;
         }
-        break;
       
       case 4:
       case 5:
       case 6:
       case 7:
-        // Set volume
-        Channel c = channels[mode - 4];
-        if (sensors[1].touch_active == 1) { // Up
-          sensors[1].touch_active = 0;
-          c.should_play = 1; // One shot sample play
-          c.volume++;
-          if (c.volume > MAX_VOLUME) {
-            c.volume = MAX_VOLUME;
+        {
+          // Set volume
+          Channel c = channels[mode - 4];
+          if (sensors[1].touch_active == 1) { // Up
+            sensors[1].touch_active = 0;
+            c.should_play = 1; // One shot sample play
+            c.volume++;
+            if (c.volume > MAX_VOLUME) {
+              c.volume = MAX_VOLUME;
+            }
+          } else if (sensors[2].touch_active == 1) { // Down
+            sensors[2].touch_active = 0;
+            c.should_play = 1; // One shot sample play
+            c.volume--;
+            if (c.volume < MIN_VOLUME) {
+              c.volume = MIN_VOLUME;
+            }
           }
-        } else if (sensors[2].touch_active == 1) { // Down
-          sensors[2].touch_active = 0;
-          c.should_play = 1; // One shot sample play
-          c.volume--;
-          if (c.volume < MIN_VOLUME) {
-            c.volume = MIN_VOLUME;
-          }
+          break;
         }
-        break;
-
       case 8:
-        if (sensors[1].touch_active == 1) { // Up
-          sensors[1].touch_active = 0;
-          channels[0].should_play = 1; // One shot sample play on channel 1
-          pitch++;
-          if (pitch > MAX_PITCH) {
-            pitch = MAX_PITCH;
+        {
+          if (sensors[1].touch_active == 1) { // Up
+            sensors[1].touch_active = 0;
+            channels[0].should_play = 1; // One shot sample play on channel 1
+            pitch++;
+            if (pitch > MAX_PITCH) {
+              pitch = MAX_PITCH;
+            }
+          } else if (sensors[2].touch_active == 1) { // Down
+            sensors[2].touch_active = 0;
+            channels[0].should_play = 1; // One shot sample play on channel 1
+            pitch--;
+            if (pitch < MIN_PITCH) {
+              pitch = MIN_PITCH;
+            }
           }
-        } else if (sensors[2].touch_active == 1) { // Down
-          sensors[2].touch_active = 0;
-          channels[0].should_play = 1; // One shot sample play on channel 1
-          pitch--;
-          if (pitch < MIN_PITCH) {
-            pitch = MIN_PITCH;
-          }
+          break;
         }
-        break;
-
       case 9:
-        if (sensors[1].touch_active == 1) { // Up
-          sensors[1].touch_active = 0;
-          font_size = 1;
-        } else if (sensors[2].touch_active == 1) { // Down
-          sensors[2].touch_active = 0;
-          font_size = 0;
+        {
+          if (sensors[1].touch_active == 1) { // Up
+            sensors[1].touch_active = 0;
+            font_size = 1;
+          } else if (sensors[2].touch_active == 1) { // Down
+            sensors[2].touch_active = 0;
+            font_size = 0;
+          }
+          break;
         }
-        break;
-        
       case 10:
-        if (sensors[1].touch_active == 1) { // Up
-          sensors[1].touch_active = 0;
-          save_settings();
-        } else if (sensors[2].touch_active == 1) { // Down
-          sensors[2].touch_active = 0;
-          save_settings();
+        {
+          if (sensors[1].touch_active == 1) { // Up
+            sensors[1].touch_active = 0;
+            save_settings();
+          } else if (sensors[2].touch_active == 1) { // Down
+            sensors[2].touch_active = 0;
+            save_settings();
+          }
+          break;
         }
-        break;
-
       default:
         break;
     }
@@ -260,7 +266,7 @@ void read_controls() {
   for (int i = 0; i < NUMBER_OF_CHANNELS; i++) {
     Channel c = channels[i];
     c.previous_control_voltage = c.control_voltage;
-    c.control_voltage = digitalRead(c.input_pin)
+    c.control_voltage = digitalRead(c.input_pin);
   }
 }
 
@@ -290,7 +296,7 @@ void soundout() {
       c.current_output = SILENCE;
     }
 
-    master_output += c.current_output
+    master_output += c.current_output;
   }
   analogWrite(A0, master_output);
 }
