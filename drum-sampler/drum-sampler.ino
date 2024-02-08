@@ -6,7 +6,6 @@
 #include <Adafruit_GFX.h>
 #include <Wire.h>//for I2C
 #include <avr/pgmspace.h>
-#include <BasicEncoder.h>
 
 #include "audio_data.h"
 
@@ -23,6 +22,10 @@
 #define MIN_VOLUME 1
 #define MAX_PITCH 52
 #define MIN_PITCH 5
+// Rotary Encoder Inputs
+#define CLK_PIN 7
+#define DT_PIN 8
+#define SW_PIN 9
 
 // Audio value to output for silence, to avoid clicks
 #define SILENCE 0x7f
@@ -74,11 +77,12 @@ TouchSensor sensors[NUMBER_OF_TOUCH_SENSORS] = {
   { .pin_name = "A9", .sensor = Adafruit_FreeTouch(A9, OVERSAMPLE_32, RESISTOR_0, FREQ_MODE_NONE), .touch_value = 0, .touch_active = 0 }   // 2 = down button
 }; */
 
-// Rotary encoder
-BasicEncoder encoder(2,3); // TODO Change pin no.
-const int button_pin = 2; // TODO change pin no.
-
-int button_state = 0;
+// Encoder variables
+bool button_state = false;
+int encoder_change = 0;
+int current_state_CLK;
+int last_state_CLK;
+unsigned long lastButtonPress = 0;
 
 // Channels
 struct Channel {
@@ -114,8 +118,16 @@ void setup() {
     Channel c = channels[i];
     pinMode(c.input_pin, INPUT_PULLDOWN);
   }
-  pinMode(10, INPUT_PULLUP); //for development
-  pinMode(button_pin, INPUT); // Encoder push button
+  pinMode(10, INPUT_PULLUP); // disp sw pin
+  pinMode(SW_PIN, INPUT_PULLUP); // Encoder pins
+	pinMode(CLK_PIN,INPUT);
+	pinMode(DT_PIN,INPUT);
+
+	// Read the initial state of encoder
+	last_state_CLK = digitalRead(CLK_PIN);
+  // Encoder interrupt
+  attachInterrupt(CLK_PIN, updateEncoder, CHANGE);
+	attachInterrupt(DT_PIN, updateEncoder, CHANGE);
 
   //   Initialize touch sensors
   /* for (int i = 0; i < NUMBER_OF_TOUCH_SENSORS; i++) {
@@ -139,15 +151,25 @@ void read_controls() {
   OLED_display(); // Is it necessary??
 
   // Encoder push button read
-  button_state = digitalRead(button_pin);
+  int button_read = digitalRead(SW_PIN);
+
+	//If we detect LOW signal, button is pressed
+	if (button_read == LOW) {
+		//if 50ms have passed since last LOW pulse, it means that the
+		//button has been pressed, released and pressed again
+		if (millis() - lastButtonPress > 50) {
+			button_state = !button_state;
+		}
+
+		// Remember last button press event
+		lastButtonPress = millis();
+	}
 
   if (disp_sw == 1 && 
       channels[0].should_play == 0 && 
       channels[0].should_play == 0 && 
       channels[0].should_play == 0 && 
-      channels[0].should_play == 0) {
-    // Rotary encoder read
-    int encoder_change = encoder.get_change(); 
+      channels[0].should_play == 0) { 
     
     /* // Read touch sensor input
     for (int i = 0; i < NUMBER_OF_TOUCH_SENSORS; i++) {
@@ -165,7 +187,7 @@ void read_controls() {
     } */
 
     // Update mode with encoder
-    if (button_state == LOW) {
+    if (!button_state) {
       if (encoder_change == 1) {
         mode ++;
         should_update_display = 1;
@@ -194,7 +216,7 @@ void read_controls() {
         mode = 10;
       }
     } */
-    if(button_state == HIGH) {
+    if(button_state) {
       switch (mode) {
         case 0:
         case 1:
@@ -426,4 +448,26 @@ void OLED_display() {
     display.drawTriangle(114, 2 + (mode - 8) * 16, 114, 10 + (mode - 8) * 16, 108, 6 + (mode - 8) * 16, WHITE);
   }
   display.display();
+}
+
+void updateEncoder(){
+	// Read the current state of CLK
+	current_state_CLK = digitalRead(CLK_PIN);
+
+	// If last and current state of CLK are different, then pulse occurred
+	// React to only 1 state change to avoid double count
+	if (current_state_CLK != last_state_CLK  && current_state_CLK == 1){
+
+		// If the DT state is different than the CLK state then
+		// the encoder is rotating CCW so decrement
+		if (digitalRead(DT_PIN) != current_state_CLK) {
+			encoder_change = -1;
+		} else {
+			// Encoder is rotating CW so increment
+			encoder_change = 1;
+		}
+	}
+
+	// Remember last CLK state
+	last_state_CLK = current_state_CLK;
 }
