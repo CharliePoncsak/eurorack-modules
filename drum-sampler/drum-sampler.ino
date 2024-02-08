@@ -76,9 +76,9 @@ TouchSensor sensors[NUMBER_OF_TOUCH_SENSORS] = {
 
 // Rotary encoder
 BasicEncoder encoder(2,3); // TODO Change pin no.
-const int buttonPin = 2 // TODO change pin no.
+const int button_pin = 2; // TODO change pin no.
 
-int buttonState = 0 
+int button_state = 0;
 
 // Channels
 struct Channel {
@@ -115,7 +115,7 @@ void setup() {
     pinMode(c.input_pin, INPUT_PULLDOWN);
   }
   pinMode(10, INPUT_PULLUP); //for development
-  pinMode(buttonPin, INPUT); // Encoder push button
+  pinMode(button_pin, INPUT); // Encoder push button
 
   //   Initialize touch sensors
   /* for (int i = 0; i < NUMBER_OF_TOUCH_SENSORS; i++) {
@@ -139,16 +139,7 @@ void read_controls() {
   OLED_display(); // Is it necessary??
 
   // Encoder push button read
-  buttonState = digitalRead(buttonPin);
-  
-  // check if the pushbutton is pressed. If it is, the buttonState is HIGH:
-  if (buttonState == HIGH) {
-    // turn LED on:
-    digitalWrite(ledPin, HIGH);
-  } else {
-    // turn LED off:
-    digitalWrite(ledPin, LOW);
-  }
+  button_state = digitalRead(button_pin);
 
   if (disp_sw == 1 && 
       channels[0].should_play == 0 && 
@@ -174,18 +165,23 @@ void read_controls() {
     } */
 
     // Update mode with encoder
-    if (encoder_change == 1) {
-      mode ++;
+    if (button_state == LOW) {
+      if (encoder_change == 1) {
+        mode ++;
+        should_update_display = 1;
+      }
+      else if (encoder_change == -1) {
+        mode --;
+        should_update_display = 1;
+      }
+      if (mode >= 11) {
+        mode = 0;
+      }
+      else if (mode < 0) {
+        mode = 10;
+      }
     }
-    else if (encoder_change == -1) {
-      mode --;
-    }
-    if (mode >= 11) {
-      mode = 0;
-    }
-    else if (mode < 0) {
-      mode = 10;
-    }
+
 
     // Update mode touch sensor
     /* if (sensors[0].touch_active == 1) {
@@ -198,103 +194,90 @@ void read_controls() {
         mode = 10;
       }
     } */
-
-    switch (mode) {
-      case 0:
-      case 1:
-      case 2:
-      case 3:
-        {
-          // Select sample
-          Channel c = channels[mode];
-          if (sensors[1].touch_active == 1) { // Up
-            sensors[1].touch_active = 0;
-            c.should_play = 1; // One shot sample play
-            c.sample_id++;
-            if (c.sample_id > NUMBER_OF_SAMPLES - 1) {
-              c.sample_id = 0;
+    if(button_state == HIGH) {
+      switch (mode) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+          {
+            // Select sample
+            Channel c = channels[mode];
+            if (encoder_change == 1) { // Up
+              c.should_play = 1; // One shot sample play
+              c.sample_id++;
+              if (c.sample_id > NUMBER_OF_SAMPLES - 1) {
+                c.sample_id = 0;
+              }
+            } else if (encoder_change == -1) { // Down
+              c.should_play = 1; // One shot sample play
+              c.sample_id--;
+              if (c.sample_id < 0) {
+                c.sample_id = NUMBER_OF_SAMPLES - 1;
+              }
             }
-          } else if (sensors[2].touch_active == 1) { // Down
-            sensors[2].touch_active = 0;
-            c.should_play = 1; // One shot sample play
-            c.sample_id--;
-            if (c.sample_id < 0) {
-              c.sample_id = NUMBER_OF_SAMPLES - 1;
-            }
+            break;
           }
-          break;
-        }
-      
-      case 4:
-      case 5:
-      case 6:
-      case 7:
-        {
-          // Set volume
-          Channel c = channels[mode - 4];
-          if (sensors[1].touch_active == 1) { // Up
-            sensors[1].touch_active = 0;
-            c.should_play = 1; // One shot sample play
-            c.volume++;
-            if (c.volume > MAX_VOLUME) {
-              c.volume = MAX_VOLUME;
+        
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+          {
+            // Set volume
+            Channel c = channels[mode - 4];
+            if (encoder_change == 1) { // Up
+              c.should_play = 1; // One shot sample play
+              c.volume++;
+              if (c.volume > MAX_VOLUME) {
+                c.volume = MAX_VOLUME;
+              }
+            } else if (encoder_change == -1) { // Down
+              c.should_play = 1; // One shot sample play
+              c.volume--;
+              if (c.volume < MIN_VOLUME) {
+                c.volume = MIN_VOLUME;
+              }
             }
-          } else if (sensors[2].touch_active == 1) { // Down
-            sensors[2].touch_active = 0;
-            c.should_play = 1; // One shot sample play
-            c.volume--;
-            if (c.volume < MIN_VOLUME) {
-              c.volume = MIN_VOLUME;
-            }
+            break;
           }
-          break;
-        }
-      case 8:
-        {
-          // Set pitch
-          if (sensors[1].touch_active == 1) { // Up
-            sensors[1].touch_active = 0;
-            channels[0].should_play = 1; // One shot sample play on channel 1
-            pitch++;
-            if (pitch > MAX_PITCH) {
-              pitch = MAX_PITCH;
+        case 8:
+          {
+            // Set pitch
+            if (encoder_change == 1) { // Up
+              channels[0].should_play = 1; // One shot sample play on channel 1
+              pitch++;
+              if (pitch > MAX_PITCH) {
+                pitch = MAX_PITCH;
+              }
+            } else if (encoder_change == -1) { // Down
+              channels[0].should_play = 1; // One shot sample play on channel 1
+              pitch--;
+              if (pitch < MIN_PITCH) {
+                pitch = MIN_PITCH;
+              }
             }
-          } else if (sensors[2].touch_active == 1) { // Down
-            sensors[2].touch_active = 0;
-            channels[0].should_play = 1; // One shot sample play on channel 1
-            pitch--;
-            if (pitch < MIN_PITCH) {
-              pitch = MIN_PITCH;
+            break;
+          }
+        case 9:
+          {
+            // Change font size
+            if (encoder_change == 1) { // Up
+              font_size = 1;
+            } else if (encoder_change == -1) { // Down
+              font_size = 0;
             }
+            break;
           }
-          break;
-        }
-      case 9:
-        {
-          // Change font size
-          if (sensors[1].touch_active == 1) { // Up
-            sensors[1].touch_active = 0;
-            font_size = 1;
-          } else if (sensors[2].touch_active == 1) { // Down
-            sensors[2].touch_active = 0;
-            font_size = 0;
-          }
-          break;
-        }
-      case 10:
-        {
-          // save
-          if (sensors[1].touch_active == 1) { // Up
-            sensors[1].touch_active = 0;
+        case 10:
+          {
+            // save
             save_settings();
-          } else if (sensors[2].touch_active == 1) { // Down
-            sensors[2].touch_active = 0;
-            save_settings();
+            break;
           }
+        default:
           break;
-        }
-      default:
-        break;
+      }
     }
 
     if (should_update_display == 1) {
