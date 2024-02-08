@@ -68,6 +68,7 @@ export default function Home() {
             <legend>Input glob pattern</legend>
             <input type='text' name='inputGlob' id='' defaultValue={'./Samples/**/*.raw'} />
           </fieldset>
+          <h1>Output</h1>
           <fieldset className={styles.fieldset}>
             <legend>Output type:</legend>
             {/* <div>
@@ -87,7 +88,7 @@ export default function Home() {
           </fieldset>
           <fieldset className={styles.fieldset}>
             <legend>Output file name</legend>
-            <input type='text' name='outputPath' defaultValue={'20230315_sampler_code/audio_data'} />
+            <input type='text' name='outputPath' defaultValue={'audio_data'} />
           </fieldset>
           <input type='submit' value='Convert' />
           {convertedCount ? <span className={styles.greenText}>Converted {convertedCount} files</span> : ''}
