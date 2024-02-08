@@ -23,7 +23,8 @@ export const fileExists = (file: string, mode?: number): Promise<boolean> => {
 
 const signedToUnsigned = (num: number, size = 8) => {}
 
-const hFileTemplate = (name: string) => `#include <cstdint>
+const hFileTemplate = (name: string) => `#include <stdint.h>
+#include <stdlib.h>
 #ifndef _${name.toLocaleUpperCase()}_H
 #define _${name.toLocaleUpperCase()}_H
 
@@ -32,7 +33,8 @@ extern const size_t ${name.toLocaleUpperCase()}_OFFSETS[];
 extern const uint8_t ${name.toLocaleUpperCase()}[];
 
 #endif`
-const cFileTemplate = (name: string, sizes: string, offsets: string, samples: string) => `#include <cstdint>
+const cFileTemplate = (name: string, sizes: string, offsets: string, samples: string) => `#include <stdint.h>
+#include <stdlib.h>
 #include "${name}.h"
 
 const size_t ${name.toLocaleUpperCase()}_SIZES[] = ${sizes};
