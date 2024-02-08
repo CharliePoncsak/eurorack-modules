@@ -6,6 +6,7 @@
 #include <Adafruit_GFX.h>
 #include <Wire.h>//for I2C
 #include <avr/pgmspace.h>
+#include <BasicEncoder.h>
 
 #include "audio_data.h"
 
@@ -17,7 +18,7 @@
 
 #define NUMBER_OF_SAMPLES 18
 #define NUMBER_OF_CHANNELS 4
-#define NUMBER_OF_TOUCH_SENSORS 3
+//#define NUMBER_OF_TOUCH_SENSORS 3
 #define MAX_VOLUME 10
 #define MIN_VOLUME 1
 #define MAX_PITCH 52
@@ -60,7 +61,7 @@ bool old_disp_sw = 0;
 bool font_size = 1;//1=font size big but have noise , 0 = font size small due to reduce noise.
 
 // Touch sensors
-struct TouchSensor {
+/* struct TouchSensor {
   char* pin_name;
   Adafruit_FreeTouch sensor;
   int touch_value;  
@@ -71,8 +72,15 @@ TouchSensor sensors[NUMBER_OF_TOUCH_SENSORS] = {
   { .pin_name = "A7", .sensor = Adafruit_FreeTouch(A7, OVERSAMPLE_32, RESISTOR_0, FREQ_MODE_NONE), .touch_value = 0, .touch_active = 0 },  // 0 = select button
   { .pin_name = "A8", .sensor = Adafruit_FreeTouch(A8, OVERSAMPLE_32, RESISTOR_0, FREQ_MODE_NONE), .touch_value = 0, .touch_active = 0 },  // 1 = up button
   { .pin_name = "A9", .sensor = Adafruit_FreeTouch(A9, OVERSAMPLE_32, RESISTOR_0, FREQ_MODE_NONE), .touch_value = 0, .touch_active = 0 }   // 2 = down button
-};
+}; */
 
+// Rotary encoder
+BasicEncoder encoder(2,3); // TODO Change pin no.
+const int buttonPin = 2 // TODO change pin no.
+
+int buttonState = 0 
+
+// Channels
 struct Channel {
   bool should_play;               // A boolean indicating that the channel should be playing
   int sample_id;                  // The id of the sample selected for each channel. This id is the index of the sample in audio_data.
@@ -92,6 +100,8 @@ Channel channels[NUMBER_OF_CHANNELS] = {
 };
 
 void setup() {
+  load_settings();
+
   // Display initialization
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   display.clearDisplay();
@@ -105,15 +115,16 @@ void setup() {
     pinMode(c.input_pin, INPUT_PULLDOWN);
   }
   pinMode(10, INPUT_PULLUP); //for development
+  pinMode(buttonPin, INPUT); // Encoder push button
 
   //   Initialize touch sensors
-  for (int i = 0; i < NUMBER_OF_TOUCH_SENSORS; i++) {
+  /* for (int i = 0; i < NUMBER_OF_TOUCH_SENSORS; i++) {
     TouchSensor s = sensors[i];
     if (!s.sensor.begin()) {
       Serial.print("Failed to begin qt on pin ");
       Serial.println(s.pin_name);
     }
-  }
+  } */
 }
 
 void loop() {
@@ -127,12 +138,27 @@ void read_controls() {
   disp_sw = digitalRead(10);
   OLED_display(); // Is it necessary??
 
+  // Encoder push button read
+  buttonState = digitalRead(buttonPin);
+  
+  // check if the pushbutton is pressed. If it is, the buttonState is HIGH:
+  if (buttonState == HIGH) {
+    // turn LED on:
+    digitalWrite(ledPin, HIGH);
+  } else {
+    // turn LED off:
+    digitalWrite(ledPin, LOW);
+  }
+
   if (disp_sw == 1 && 
       channels[0].should_play == 0 && 
       channels[0].should_play == 0 && 
       channels[0].should_play == 0 && 
       channels[0].should_play == 0) {
-    // Read touch sensor input
+    // Rotary encoder read
+    int encoder_change = encoder.get_change(); 
+    
+    /* // Read touch sensor input
     for (int i = 0; i < NUMBER_OF_TOUCH_SENSORS; i++) {
       TouchSensor s = sensors[i];
       s.touch_value = s.sensor.measure();
@@ -145,10 +171,24 @@ void read_controls() {
       if (s.touch_value <= 930) {
         s.touch_value = 0;
       }
+    } */
+
+    // Update mode with encoder
+    if (encoder_change == 1) {
+      mode ++;
+    }
+    else if (encoder_change == -1) {
+      mode --;
+    }
+    if (mode >= 11) {
+      mode = 0;
+    }
+    else if (mode < 0) {
+      mode = 10;
     }
 
-    // Update mode
-    if (sensors[0].touch_active == 1) {
+    // Update mode touch sensor
+    /* if (sensors[0].touch_active == 1) {
       sensors[0].touch_active = 0;
       mode++;
       if (mode > 10) {
@@ -157,7 +197,7 @@ void read_controls() {
       else if (mode < 0) {
         mode = 10;
       }
-    }
+    } */
 
     switch (mode) {
       case 0:
@@ -211,6 +251,7 @@ void read_controls() {
         }
       case 8:
         {
+          // Set pitch
           if (sensors[1].touch_active == 1) { // Up
             sensors[1].touch_active = 0;
             channels[0].should_play = 1; // One shot sample play on channel 1
@@ -230,6 +271,7 @@ void read_controls() {
         }
       case 9:
         {
+          // Change font size
           if (sensors[1].touch_active == 1) { // Up
             sensors[1].touch_active = 0;
             font_size = 1;
@@ -241,6 +283,7 @@ void read_controls() {
         }
       case 10:
         {
+          // save
           if (sensors[1].touch_active == 1) { // Up
             sensors[1].touch_active = 0;
             save_settings();
@@ -257,8 +300,7 @@ void read_controls() {
     if (should_update_display == 1) {
       should_update_display = 0;
       OLED_display();
-      delay(100);//countermeasure of touch sensor continuous input
-      // TODO remove delay once touch sensors changed to knobs
+      //delay(100);//countermeasure of touch sensor continuous input
     }
   }
 
