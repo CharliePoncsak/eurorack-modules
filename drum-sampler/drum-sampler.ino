@@ -466,7 +466,9 @@ void updateEncoder(){
 			// Encoder is rotating CW so increment
 			encoder_change = 1;
 		}
-	}
+	} else {
+    encoder_change = 0;
+  }
 
 	// Remember last CLK state
 	last_state_CLK = current_state_CLK;
