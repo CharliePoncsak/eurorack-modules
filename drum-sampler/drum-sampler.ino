@@ -17,11 +17,15 @@
 
 #define NUMBER_OF_SAMPLES 18
 #define NUMBER_OF_CHANNELS 4
-#define NUMBER_OF_TOUCH_SENSORS 3
+//#define NUMBER_OF_TOUCH_SENSORS 3
 #define MAX_VOLUME 10
 #define MIN_VOLUME 1
 #define MAX_PITCH 52
 #define MIN_PITCH 5
+// Rotary Encoder Inputs
+#define CLK_PIN 7
+#define DT_PIN 8
+#define SW_PIN 9
 
 // Audio value to output for silence, to avoid clicks
 #define SILENCE 0x7f
@@ -60,7 +64,7 @@ bool old_disp_sw = 0;
 bool font_size = 1;//1=font size big but have noise , 0 = font size small due to reduce noise.
 
 // Touch sensors
-struct TouchSensor {
+/* struct TouchSensor {
   char* pin_name;
   Adafruit_FreeTouch sensor;
   int touch_value;  
@@ -71,8 +75,16 @@ TouchSensor sensors[NUMBER_OF_TOUCH_SENSORS] = {
   { .pin_name = "A7", .sensor = Adafruit_FreeTouch(A7, OVERSAMPLE_32, RESISTOR_0, FREQ_MODE_NONE), .touch_value = 0, .touch_active = 0 },  // 0 = select button
   { .pin_name = "A8", .sensor = Adafruit_FreeTouch(A8, OVERSAMPLE_32, RESISTOR_0, FREQ_MODE_NONE), .touch_value = 0, .touch_active = 0 },  // 1 = up button
   { .pin_name = "A9", .sensor = Adafruit_FreeTouch(A9, OVERSAMPLE_32, RESISTOR_0, FREQ_MODE_NONE), .touch_value = 0, .touch_active = 0 }   // 2 = down button
-};
+}; */
 
+// Encoder variables
+bool button_state = false;
+int encoder_change = 0;
+int current_state_CLK;
+int last_state_CLK;
+unsigned long lastButtonPress = 0;
+
+// Channels
 struct Channel {
   bool should_play;               // A boolean indicating that the channel should be playing
   int sample_id;                  // The id of the sample selected for each channel. This id is the index of the sample in audio_data.
@@ -92,6 +104,8 @@ Channel channels[NUMBER_OF_CHANNELS] = {
 };
 
 void setup() {
+  load_settings();
+
   // Display initialization
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   display.clearDisplay();
@@ -104,16 +118,25 @@ void setup() {
     Channel c = channels[i];
     pinMode(c.input_pin, INPUT_PULLDOWN);
   }
-  pinMode(10, INPUT_PULLUP); //for development
+  pinMode(10, INPUT_PULLUP); // disp sw pin
+  pinMode(SW_PIN, INPUT_PULLUP); // Encoder pins
+	pinMode(CLK_PIN,INPUT);
+	pinMode(DT_PIN,INPUT);
+
+	// Read the initial state of encoder
+	last_state_CLK = digitalRead(CLK_PIN);
+  // Encoder interrupt
+  attachInterrupt(CLK_PIN, updateEncoder, CHANGE);
+	attachInterrupt(DT_PIN, updateEncoder, CHANGE);
 
   //   Initialize touch sensors
-  for (int i = 0; i < NUMBER_OF_TOUCH_SENSORS; i++) {
+  /* for (int i = 0; i < NUMBER_OF_TOUCH_SENSORS; i++) {
     TouchSensor s = sensors[i];
     if (!s.sensor.begin()) {
       Serial.print("Failed to begin qt on pin ");
       Serial.println(s.pin_name);
     }
-  }
+  } */
 }
 
 void loop() {
@@ -127,12 +150,28 @@ void read_controls() {
   disp_sw = digitalRead(10);
   OLED_display(); // Is it necessary??
 
+  // Encoder push button read
+  int button_read = digitalRead(SW_PIN);
+
+	//If we detect LOW signal, button is pressed
+	if (button_read == LOW) {
+		//if 50ms have passed since last LOW pulse, it means that the
+		//button has been pressed, released and pressed again
+		if (millis() - lastButtonPress > 50) {
+			button_state = !button_state;
+		}
+
+		// Remember last button press event
+		lastButtonPress = millis();
+	}
+
   if (disp_sw == 1 && 
       channels[0].should_play == 0 && 
       channels[0].should_play == 0 && 
       channels[0].should_play == 0 && 
-      channels[0].should_play == 0) {
-    // Read touch sensor input
+      channels[0].should_play == 0) { 
+    
+    /* // Read touch sensor input
     for (int i = 0; i < NUMBER_OF_TOUCH_SENSORS; i++) {
       TouchSensor s = sensors[i];
       s.touch_value = s.sensor.measure();
@@ -145,10 +184,29 @@ void read_controls() {
       if (s.touch_value <= 930) {
         s.touch_value = 0;
       }
+    } */
+
+    // Update mode with encoder
+    if (!button_state) {
+      if (encoder_change == 1) {
+        mode ++;
+        should_update_display = 1;
+      }
+      else if (encoder_change == -1) {
+        mode --;
+        should_update_display = 1;
+      }
+      if (mode >= 11) {
+        mode = 0;
+      }
+      else if (mode < 0) {
+        mode = 10;
+      }
     }
 
-    // Update mode
-    if (sensors[0].touch_active == 1) {
+
+    // Update mode touch sensor
+    /* if (sensors[0].touch_active == 1) {
       sensors[0].touch_active = 0;
       mode++;
       if (mode > 10) {
@@ -157,108 +215,97 @@ void read_controls() {
       else if (mode < 0) {
         mode = 10;
       }
-    }
-
-    switch (mode) {
-      case 0:
-      case 1:
-      case 2:
-      case 3:
-        {
-          // Select sample
-          Channel c = channels[mode];
-          if (sensors[1].touch_active == 1) { // Up
-            sensors[1].touch_active = 0;
-            c.should_play = 1; // One shot sample play
-            c.sample_id++;
-            if (c.sample_id > NUMBER_OF_SAMPLES - 1) {
-              c.sample_id = 0;
+    } */
+    if(button_state) {
+      switch (mode) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+          {
+            // Select sample
+            Channel c = channels[mode];
+            if (encoder_change == 1) { // Up
+              c.should_play = 1; // One shot sample play
+              c.sample_id++;
+              if (c.sample_id > NUMBER_OF_SAMPLES - 1) {
+                c.sample_id = 0;
+              }
+            } else if (encoder_change == -1) { // Down
+              c.should_play = 1; // One shot sample play
+              c.sample_id--;
+              if (c.sample_id < 0) {
+                c.sample_id = NUMBER_OF_SAMPLES - 1;
+              }
             }
-          } else if (sensors[2].touch_active == 1) { // Down
-            sensors[2].touch_active = 0;
-            c.should_play = 1; // One shot sample play
-            c.sample_id--;
-            if (c.sample_id < 0) {
-              c.sample_id = NUMBER_OF_SAMPLES - 1;
-            }
+            break;
           }
-          break;
-        }
-      
-      case 4:
-      case 5:
-      case 6:
-      case 7:
-        {
-          // Set volume
-          Channel c = channels[mode - 4];
-          if (sensors[1].touch_active == 1) { // Up
-            sensors[1].touch_active = 0;
-            c.should_play = 1; // One shot sample play
-            c.volume++;
-            if (c.volume > MAX_VOLUME) {
-              c.volume = MAX_VOLUME;
+        
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+          {
+            // Set volume
+            Channel c = channels[mode - 4];
+            if (encoder_change == 1) { // Up
+              c.should_play = 1; // One shot sample play
+              c.volume++;
+              if (c.volume > MAX_VOLUME) {
+                c.volume = MAX_VOLUME;
+              }
+            } else if (encoder_change == -1) { // Down
+              c.should_play = 1; // One shot sample play
+              c.volume--;
+              if (c.volume < MIN_VOLUME) {
+                c.volume = MIN_VOLUME;
+              }
             }
-          } else if (sensors[2].touch_active == 1) { // Down
-            sensors[2].touch_active = 0;
-            c.should_play = 1; // One shot sample play
-            c.volume--;
-            if (c.volume < MIN_VOLUME) {
-              c.volume = MIN_VOLUME;
-            }
+            break;
           }
-          break;
-        }
-      case 8:
-        {
-          if (sensors[1].touch_active == 1) { // Up
-            sensors[1].touch_active = 0;
-            channels[0].should_play = 1; // One shot sample play on channel 1
-            pitch++;
-            if (pitch > MAX_PITCH) {
-              pitch = MAX_PITCH;
+        case 8:
+          {
+            // Set pitch
+            if (encoder_change == 1) { // Up
+              channels[0].should_play = 1; // One shot sample play on channel 1
+              pitch++;
+              if (pitch > MAX_PITCH) {
+                pitch = MAX_PITCH;
+              }
+            } else if (encoder_change == -1) { // Down
+              channels[0].should_play = 1; // One shot sample play on channel 1
+              pitch--;
+              if (pitch < MIN_PITCH) {
+                pitch = MIN_PITCH;
+              }
             }
-          } else if (sensors[2].touch_active == 1) { // Down
-            sensors[2].touch_active = 0;
-            channels[0].should_play = 1; // One shot sample play on channel 1
-            pitch--;
-            if (pitch < MIN_PITCH) {
-              pitch = MIN_PITCH;
+            break;
+          }
+        case 9:
+          {
+            // Change font size
+            if (encoder_change == 1) { // Up
+              font_size = 1;
+            } else if (encoder_change == -1) { // Down
+              font_size = 0;
             }
+            break;
           }
-          break;
-        }
-      case 9:
-        {
-          if (sensors[1].touch_active == 1) { // Up
-            sensors[1].touch_active = 0;
-            font_size = 1;
-          } else if (sensors[2].touch_active == 1) { // Down
-            sensors[2].touch_active = 0;
-            font_size = 0;
-          }
-          break;
-        }
-      case 10:
-        {
-          if (sensors[1].touch_active == 1) { // Up
-            sensors[1].touch_active = 0;
+        case 10:
+          {
+            // save
             save_settings();
-          } else if (sensors[2].touch_active == 1) { // Down
-            sensors[2].touch_active = 0;
-            save_settings();
+            break;
           }
+        default:
           break;
-        }
-      default:
-        break;
+      }
     }
 
     if (should_update_display == 1) {
       should_update_display = 0;
       OLED_display();
-      delay(100);//countermeasure of touch sensor continuous input
-      // TODO remove delay once touch sensors changed to knobs
+      //delay(100);//countermeasure of touch sensor continuous input
     }
   }
 
@@ -401,4 +448,28 @@ void OLED_display() {
     display.drawTriangle(114, 2 + (mode - 8) * 16, 114, 10 + (mode - 8) * 16, 108, 6 + (mode - 8) * 16, WHITE);
   }
   display.display();
+}
+
+void updateEncoder(){
+	// Read the current state of CLK
+	current_state_CLK = digitalRead(CLK_PIN);
+
+	// If last and current state of CLK are different, then pulse occurred
+	// React to only 1 state change to avoid double count
+	if (current_state_CLK != last_state_CLK  && current_state_CLK == 1){
+
+		// If the DT state is different than the CLK state then
+		// the encoder is rotating CCW so decrement
+		if (digitalRead(DT_PIN) != current_state_CLK) {
+			encoder_change = -1;
+		} else {
+			// Encoder is rotating CW so increment
+			encoder_change = 1;
+		}
+	} else {
+    encoder_change = 0;
+  }
+
+	// Remember last CLK state
+	last_state_CLK = current_state_CLK;
 }
