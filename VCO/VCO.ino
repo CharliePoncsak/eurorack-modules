@@ -14,32 +14,67 @@
 #define MODE_1_PIN 9
 #define MODE_2_PIN 10
 
+const int base_frequency = 35; // base osc frequency
+
 int mode = 0; // Base wavefold mode
 int waveform = 1; // Base sine waveform
-int f0 = 35; // base osc frequency
-
-int wavetable[256]; //  1024 resolution , 256 rate
+float freq = 0;
+float osc_freq = 0;
+int wavetable[256]; // 1024 resolution, 256 rate
 float freq_table[2048];
 
-void setup() {
-  Serial.begin(9600); // for debugging
+// ESP32
+hw_timer_t *timer0 = NULL;
 
-  table_set(); // set wavetable
+void setup() {
+  Serial.begin(9600);
+
+  pinMode(V_OCT_PIN, INPUT_PULLUP);
+  pinMode(FREQ_PIN, INPUT_PULLUP);
+  pinMode(MOD_CV_PIN, INPUT_PULLUP);
+  pinMode(MOD_PIN, INPUT_PULLUP);
+  pinMode(WAVEFORM_PIN, INPUT_PULLUP);
+  pinMode(OCT_1_PIN, INPUT_PULLUP);
+  pinMode(OCT_2_PIN, INPUT_PULLUP);
+  pinMode(MODE_1_PIN, INPUT_PULLUP);
+  pinMode(MODE_2_PIN, INPUT_PULLUP);
+  pinMode(AUDIO_OUT_PIN, OUTPUT);
+
+  // set wavetable
+  table_set();
   
   // Select octave
   for (int i = 0; i < 1230; i++) {
-    freq_table[i] = f0 * pow(2, (V_OCT_POW[i]));
+    freq_table[i] = base_frequency * pow(2, (V_OCT_POW[i]));
   }
   for (int i = 0; i < 2048 - 1230; i++) {
     freq_table[i + 1230] = 6;
   }
+
+  // PWM setup
+  ledcSetup(1, 39000, 10);//PWM frequency and resolution
+  ledcAttachPin(AUDIO_OUT_PIN, 1);//(LED_PIN, LEDC_CHANNEL_0);//timer ch1 , apply D5 output
+
+  // interrupt setup
+  timer0 = timerBegin(0, 1666, true);  // timer0, 12.5ns*1666 = 20.83usec(48kHz), count-up
+  timerAttachInterrupt(timer0, &onTimer, true); // edge-triggered
+  timerAlarmWrite(timer0, 1, true); // 1*20.83usec = 20.83usec, auto-reload
+  timerAlarmEnable(timer0); // enable timer0
 }
 
 void loop() {
-    // TODO
+  // TODO
 }
 
-
+void onTimer() {
+  freq = freq + osc_freq;
+  if (freq > 255) {
+    freq = 0;
+  }
+  int k = (int)freq;
+  //PWM output
+  ledcWrite(1, wavetable[k]);
+}
 
 void table_set() {//make wavetable
 
