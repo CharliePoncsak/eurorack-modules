@@ -63,7 +63,7 @@ void setup() {
 }
 
 void loop() {
-  // TODO
+  // Updating next played frequency
 }
 
 void onTimer() {
