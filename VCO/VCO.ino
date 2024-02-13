@@ -2,26 +2,24 @@
 #include "audio_data.h"
 
 // Pin numbers
-#define V_OCT_PIN 0
-#define FREQ_PIN 1
-#define MOD_CV_PIN 2
-#define MOD_PIN 3
-#define WAVEFORM_PIN 4
-// Pin 5 is empty
-#define OCT_1_PIN 6
-#define OCT_2_PIN 7
-#define AUDIO_OUT_PIN 8
-#define MODE_1_PIN 9
-#define MODE_2_PIN 10
+#define AUDIO_OUT_PIN D0
+// #define V_OCT_PIN 0
+// #define FREQ_PIN 1
+// #define MOD_CV_PIN 2
+// #define MOD_PIN 3
+// #define WAVEFORM_PIN 4
+// // Pin 5 is empty
+// #define OCT_1_PIN 6
+// #define OCT_2_PIN 7
+// #define MODE_1_PIN 9
+// #define MODE_2_PIN 10
 
 const int base_frequency = 35; // base osc frequency
 
 int mode = 0; // Base wavefold mode
 int waveform = 1; // Base sine waveform
-float freq = 0;
-float osc_freq = 0;
 int wavetable[256]; // 1024 resolution, 256 rate
-float freq_table[2048];
+int out_idx = 0; // Output index
 
 // ESP32
 hw_timer_t *timer0 = NULL;
@@ -29,27 +27,19 @@ hw_timer_t *timer0 = NULL;
 void setup() {
   Serial.begin(9600);
 
-  pinMode(V_OCT_PIN, INPUT_PULLUP);
-  pinMode(FREQ_PIN, INPUT_PULLUP);
-  pinMode(MOD_CV_PIN, INPUT_PULLUP);
-  pinMode(MOD_PIN, INPUT_PULLUP);
-  pinMode(WAVEFORM_PIN, INPUT_PULLUP);
-  pinMode(OCT_1_PIN, INPUT_PULLUP);
-  pinMode(OCT_2_PIN, INPUT_PULLUP);
-  pinMode(MODE_1_PIN, INPUT_PULLUP);
-  pinMode(MODE_2_PIN, INPUT_PULLUP);
+  // pinMode(V_OCT_PIN, INPUT_PULLUP);
+  // pinMode(FREQ_PIN, INPUT_PULLUP);
+  // pinMode(MOD_CV_PIN, INPUT_PULLUP);
+  // pinMode(MOD_PIN, INPUT_PULLUP);
+  // pinMode(WAVEFORM_PIN, INPUT_PULLUP);
+  // pinMode(OCT_1_PIN, INPUT_PULLUP);
+  // pinMode(OCT_2_PIN, INPUT_PULLUP);
+  // pinMode(MODE_1_PIN, INPUT_PULLUP);
+  // pinMode(MODE_2_PIN, INPUT_PULLUP);
   pinMode(AUDIO_OUT_PIN, OUTPUT);
 
   // set wavetable
   table_set();
-  
-  // Select octave
-  for (int i = 0; i < 1230; i++) {
-    freq_table[i] = base_frequency * pow(2, (V_OCT_POW[i]));
-  }
-  for (int i = 0; i < 2048 - 1230; i++) {
-    freq_table[i + 1230] = 6;
-  }
 
   // PWM setup
   ledcSetup(1, 39000, 10);//PWM frequency and resolution
@@ -67,13 +57,13 @@ void loop() {
 }
 
 void onTimer() {
-  freq = freq + osc_freq;
-  if (freq > 255) {
-    freq = 0;
-  }
-  int k = (int)freq;
   //PWM output
-  ledcWrite(1, wavetable[k]);
+  ledcWrite(1, wavetable[out_idx] + 511);
+  // Since we update every clock tick, frequency is 187.5hz
+  out_idx++;
+  if (out_idx >= 256) {
+    out_idx = 0;
+  }
 }
 
 void table_set() {//make wavetable
